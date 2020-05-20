@@ -1,3 +1,4 @@
+USE apibase;
 DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     PersonID int,
