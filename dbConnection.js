@@ -1,8 +1,8 @@
 const mysql = require("mysql");
 //creating mysql connectin object 
 var mysqlConnection = mysql.createConnection({
-    host     : 'apibasedb',
-    port     : '3306',
+    host     : 'localhost',
+    port     : '3308',
     user     : 'root',
     password : 'root',
     database : 'apibase',
