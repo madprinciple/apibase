@@ -1,0 +1,115 @@
+{
+	"AWSTemplateFormatVersion" : "2010-09-09",
+
+	"Description" : "",
+
+	"Parameters" : {               
+        "Ec2InstanceType": {
+            "Type" : "String",
+            "Default" : "t2.micro",
+            "AllowedValues" : ["t2.micro","t2.small"]
+        }, 
+        "Ec2AMI": {
+            "Type" : "String",
+            "Default" : "ami-07c1207a9d40bc3bd",
+            "AllowedValues" : ["ami-026dea5602e368e96","ami-07c1207a9d40bc3bd"]
+        }
+	},
+	"Resources" : {
+        "apibaseVPC" : {
+            "Type" : "AWS::EC2::VPC",
+            "Properties" : {
+               "CidrBlock" : "172.25.0.0/16",
+               "EnableDnsSupport" : "true",
+               "EnableDnsHostnames" : "true",
+               "InstanceTenancy" : "default",
+               "Tags" : [ {"Key" : "foo", "Value" : "bar"} ]
+            }
+        },
+        "apibaseSubnet" : {
+            "Type" : "AWS::EC2::Subnet",
+            "Properties" : {
+            "VpcId" : { "Ref" : "apibaseVPC" },
+            "MapPublicIpOnLaunch" : true,
+            "CidrBlock" : "172.25.1.0/24",
+            "AvailabilityZone" : "us-east-2c",
+            "Tags" : [ { "Key" : "Name", "Value" : "apibase-Subnet" } ]
+            }   
+        },
+	    "apibaseRt" : {
+            "Type" : "AWS::EC2::RouteTable",
+            "Properties" : {
+                "VpcId" : { "Ref" : "apibaseVPC" },
+                "Tags" : [ { "Key" : "Name", "Value" : "apibase-Route-Table" } ]
+            }
+        },
+        "apibaseInternetGateway" : {
+            "Type" : "AWS::EC2::InternetGateway",
+            "Properties" : {
+              "Tags" : [ {"Key" : "Name", "Value" : "apibase-Internet-Gateway"}]
+            }
+        },
+        "apibaseVPCGatewayAttachment" : {
+        "Type" : "AWS::EC2::VPCGatewayAttachment",
+        "Properties" : {
+            "InternetGatewayId" : { "Ref" : "apibaseInternetGateway" } ,
+            "VpcId" : { "Ref" : "apibaseVPC" }
+          }
+        },
+	    "apibaseInternetGatewayRoute" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : 
+                {"RouteTableId" : { "Ref" : "apibaseRt" }, "DestinationCidrBlock" : "0.0.0.0/0", "GatewayId" : { "Ref" : "apibaseInternetGateway" }}
+	    },
+	    "apibaseRouteTableAssociation" : {
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+		        "SubnetId" : {"Ref" : "apibaseSubnet"}, 
+		        "RouteTableId" : { "Ref" : "apibaseRt"}
+	        }
+        },
+	    "apibaseSg" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : "Security group for apibase",
+                "VpcId" : { "Ref" : "apibaseVPC" },
+	            "SecurityGroupIngress" : [ 
+                    { "IpProtocol" : "tcp", "FromPort" : 22, "ToPort" : 22, "CidrIp" : "115.66.8.96/32" },
+                    { "IpProtocol" : "icmp", "FromPort" : -1, "ToPort" : -1, "CidrIp" : "0.0.0.0/0" },
+			        { "IpProtocol" : "tcp", "FromPort" : 443, "ToPort" : 443, "CidrIp" : "0.0.0.0/0" },
+		            { "IpProtocol" : "tcp", "FromPort" : 80, "ToPort" : 80, "CidrIp" : "0.0.0.0/0" }],
+	            "SecurityGroupEgress": [
+	                {"CidrIp": "0.0.0.0/0", "IpProtocol": "-1","FromPort" : -1,"ToPort" : -1}]
+	        }
+        },
+	    "apibaseEC2":{
+            "Type" : "AWS::EC2::Instance",
+            "Properties" : {
+                "ImageId" : {"Ref" : "Ec2AMI"},
+                "KeyName" : "server-key",
+	            "Tags" : [ { "Key" : "Name", "Value" : "Dev-server" } ],
+                "InstanceType" : {"Ref" : "Ec2InstanceType"},
+	            "SubnetId" : {"Ref" : "apibaseSubnet"},
+	            "SecurityGroupIds" : [{"Ref" : "apibaseSg"}],               
+                "BlockDeviceMappings" : [{
+                    "DeviceName" : "/dev/sda1",
+                    "Ebs" : {
+                        "DeleteOnTermination" : "true",
+                        "VolumeSize" : "8",
+			            "VolumeType" : "gp2"
+                    }
+                }]
+            }
+        }
+    },
+	"Outputs" : {
+        "apibaseEC2Ip" : {
+            "Description": "EC2 Ip",  
+            "Value" : { "Fn::GetAtt" : [ "apibaseEC2", "PrivateIp" ]}
+        },
+        "apibaseEC2PublicIp" : {
+            "Description": "EC2 Public Ip",  
+            "Value" : { "Fn::GetAtt" : [ "apibaseEC2", "PublicIp" ]}
+        }
+    }         
+}
