@@ -22,4 +22,4 @@ RUN npm install
 COPY . /opt/apibase/
 
 EXPOSE 8081
-CMD [ "node", "server.js" ]
+CMD [ "./node_modules/.bin/nodemon", "server.js" ]

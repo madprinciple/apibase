@@ -1,7 +1,7 @@
 const mysql = require("mysql");
 //creating mysql connectin object 
 var mysqlConnection = mysql.createConnection({
-    host     : 'apibasedb',
+    host     : 'localhost',
     port     : '3306',
     user     : 'root',
     password : 'root',
@@ -13,7 +13,7 @@ var mysqlConnection = mysql.createConnection({
 mysqlConnection.connect((err)=>{
     if(!err)
         {
-            console.log("DB is Connected");
+            console.log("DB is Connected : Great");
         }
     else
         {
